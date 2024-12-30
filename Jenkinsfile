@@ -34,10 +34,11 @@ pipeline {
             steps {
                 script {
                     // Get the ECR authorization token
-                    def ecrToken = sh(returnStdout: true, script: "aws ecr-public get-login-password --region ${AWS_REGION}")
+                    // def ecrToken = sh(returnStdout: true, script: "aws ecr-public get-login-password --region ${AWS_REGION}")
 
                     // Log in to ECR using the token
-                    sh "docker login --username AWS --password ${ecrToken} ${ECR_REPO.substring(0, ECR_REPO.lastIndexOf('/'))}"
+                    //sh "docker login --username AWS --password ${ecrToken} ${ECR_REPO.substring(0, ECR_REPO.lastIndexOf('/'))}"
+                    sh "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/o0y6x7h1"
 
                     // Construct the ECR image tag
                     def ecrImageTag = "${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}"
