@@ -34,10 +34,6 @@ pipeline {
             steps {
                 script {
                     // Get the ECR authorization token
-                    // def ecrToken = sh(returnStdout: true, script: "aws ecr-public get-login-password --region ${AWS_REGION}")
-
-                    // Log in to ECR using the token
-                    //sh "docker login --username AWS --password ${ecrToken} ${ECR_REPO.substring(0, ECR_REPO.lastIndexOf('/'))}"
                     sh "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/o0y6x7h1"
 
                     // Construct the ECR image tag
@@ -48,6 +44,22 @@ pipeline {
 
                     // Push the image to ECR
                     sh "docker push ${ecrImageTag}"
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    // Update the image tag in the deployment manifest
+                    sh "sed -i 's#${ECR_REPO}/${APP_NAME}:.*#${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}#' kubernetes/deployment.yaml"
+
+                    // Apply the Kubernetes manifests
+                    sh "kubectl apply -f kubernetes/deployment.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
+                    sh "kubectl apply -f kubernetes/service.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
+
+                    // Wait for the deployment to complete
+                    sh "kubectl rollout status deployment/${APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH}"
                 }
             }
         }

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app1 # Or your app's name
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flask-app1
+  template:
+    metadata:
+      labels:
+        app: flask-app1
+    spec:
+      containers:
+        - name: flask-app1
+          image: public.ecr.aws/o0y6x7h1/sampleapp/flask-app1:latest # Update this placeholder
+          ports:
+            - containerPort: 5000
