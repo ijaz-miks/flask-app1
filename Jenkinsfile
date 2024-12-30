@@ -5,7 +5,7 @@ pipeline {
         APP_NAME = "flask-app1"
         DOCKER_IMAGE = "${env.APP_NAME}:${BUILD_NUMBER}"
         ECR_REPO = "public.ecr.aws/o0y6x7h1/sampleapp/flask-app1" // Your ECR repo
-        AWS_REGION = "eu-central-1" // Your AWS region
+        AWS_REGION = "us-east-1" // Your AWS region
     }
 
     stages {
