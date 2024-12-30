@@ -33,11 +33,11 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Tag the image for ECR
-                    docker.image("$DOCKER_IMAGE").tag("${ECR_REPO}:${BUILD_NUMBER}")
+                    // Tag the image for ECR correctly
+                    docker.image("$DOCKER_IMAGE").tag("${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}")
 
-                    // Push the image to ECR (no authentication needed for public repos)
-                    docker.image("${ECR_REPO}:${BUILD_NUMBER}").push()
+                    // Push the image to ECR
+                    docker.image("${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}").push()
                 }
             }
         }
