@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "flask-app1"
+        APP_NAME = "flask-app1" 
         DOCKER_IMAGE = "${env.APP_NAME}:${BUILD_NUMBER}"
-        ECR_REPO = "public.ecr.aws/o0y6x7h1/sampleapp/flask-app1" // Your ECR repo
+        ECR_REPO = "public.ecr.aws/o0y6x7h1/sampleapp" // Your public ECR repo
         AWS_REGION = "us-east-1" // Your AWS region
     }
 
@@ -19,7 +19,7 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image
-                    docker.build("$DOCKER_IMAGE")
+                    sh "docker build -t $DOCKER_IMAGE ."
 
                     // Run tests inside the container
                     def testExitCode = sh(script: "docker run $DOCKER_IMAGE python -m unittest test_app.py", returnStatus: true)
@@ -33,17 +33,22 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Tag the image for ECR correctly
-                    docker.image("$DOCKER_IMAGE").tag("${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}")
+                    // Get the ECR authorization token
+                    def ecrToken = sh(returnStdout: true, script: "aws ecr-public get-login-password --region ${AWS_REGION}")
+
+                    // Log in to ECR using the token
+                    sh "docker login --username AWS --password ${ecrToken} ${ECR_REPO.substring(0, ECR_REPO.lastIndexOf('/'))}"
+
+                    // Construct the ECR image tag
+                    def ecrImageTag = "${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}"
+
+                    // Tag the image for ECR
+                    sh "docker tag ${DOCKER_IMAGE} ${ecrImageTag}"
 
                     // Push the image to ECR
-                    docker.image("${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}").push()
+                    sh "docker push ${ecrImageTag}"
                 }
             }
         }
-
-        // You can add a 'Deploy to EKS' stage later
     }
-
-    // Optional: Add post-build actions like notifications
 }
