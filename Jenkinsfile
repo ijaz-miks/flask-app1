@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git branch: 'main', url: 'git@github.com:ijaz-miks/flask-app1.git'
+                git branch: 'master', url: 'git@github.com:ijaz-miks/flask-app1.git'
             }
         }
 
