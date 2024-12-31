@@ -18,3 +18,10 @@ spec:
           image: public.ecr.aws/o0y6x7h1/sampleapp/flask-app1:latest
           ports:
             - containerPort: 5000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
