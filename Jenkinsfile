@@ -58,6 +58,7 @@ pipeline {
                     // Apply the Kubernetes manifests
                     sh "kubectl apply -f kubernetes/deployment.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
                     sh "kubectl apply -f kubernetes/service.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
+                    sh "kubectl apply -f kubernetes/ingress.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
 
                     // Wait for the deployment to complete
                     sh "kubectl rollout status deployment/${APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH}"

@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flask-apps-ingress
+  namespace: flask-app
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-central-1:783764578905:certificate/36b1d0b3-f1f0-47eb-9901-ce4f68a84775 
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+spec:
+  tls:
+  - hosts:
+    - "*.cave-jarvis.com" 
+  rules:
+  - host: flask-app1.cave-jarvis.com # Hostname for app1
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: flask-app1-service # Service for app1
+            port:
+              number: 80
+  # - host: app2.cave-jarvis.com # Hostname for app2
+  #   http:
+  #     paths:
+  #     - path: /
+  #       pathType: Prefix
+  #       backend:
+  #         service:
+  #           name: my-flask-app2-service # Service for app2
+  #           port:
+  #             number: 80
