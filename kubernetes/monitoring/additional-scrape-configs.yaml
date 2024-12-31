@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: additional-scrape-configs
+  namespace: monitoring # Replace with your monitoring namespace
+stringData:
+  prometheus-additional.yaml: |
+    - job_name: 'jenkins'
+      metrics_path: '/prometheus'
+      scheme: https
+      static_configs:
+        - targets:
+          - 'jenkins.cave-jarvis.com' # e.g., jenkins.example.com:8080
+
+    - job_name: 'kube-state-metrics'
+      static_configs:
+        - targets: ['stable-kube-state-metrics.monitoring.svc.cluster.local:8080'] # Adjust if necessary
+      metric_relabel_configs:
+        - source_labels: [__address__]
+          target_label: __address__
+          regex: (.*):.*
+          replacement: ${1}:8080
+
+    - job_name: 'metrics-server'
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      static_configs:
+      - targets: ['metrics-server.kube-system.svc.cluster.local:443']
