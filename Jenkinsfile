@@ -61,7 +61,7 @@ pipeline {
                     sh "kubectl apply -f kubernetes/ingress.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
 
                     // Wait for the deployment to complete
-                    sh "kubectl rollout status deployment/${APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH}"
+                    sh "kubectl rollout status deployment/${APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH} -n flask-app"
                 }
             }
         }
