@@ -58,3 +58,58 @@ running (15m03.2s), 00/50 VUs, 19566 complete and 0 interrupted iterations
 random_requests ✓ [======================================] 00/50 VUs  15m0s  50.00 iters/s
 
 ```
+
+Result of running after Jaeger setup:
+
+```
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+     execution: local
+        script: k6-script-2.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 50 max VUs, 15m30s max duration (incl. graceful stop):
+              * random_requests: 50.00 iterations/s for 15m0s (maxVUs: 10-50, gracefulStop: 30s)
+
+WARN[0003] Insufficient VUs, reached 50 active VUs and cannot initialize more  executor=constant-arrival-rate scenario=random_requests
+
+     ✗ get items status is 200
+      ↳  0% — ✓ 0 / ✗ 3206
+     ✓ add item status is 201
+     ✓ get users status is 200
+     ✗ create user status is 201
+      ↳  0% — ✓ 0 / ✗ 3289
+     ✓ login status is 200
+     ✗ place order status is 201
+      ↳  20% — ✓ 658 / ✗ 2626
+     ✗ place order duration is ok
+      ↳  97% — ✓ 3192 / ✗ 92
+
+     checks.........................: 59.71% 13657 out of 22870
+     data_received..................: 35 MB  39 kB/s
+     data_sent......................: 2.3 MB 2.5 kB/s
+     dropped_iterations.............: 25414  28.137197/s
+     http_req_blocked...............: avg=6.68ms   min=209ns    med=1.16µs   max=1.14s    p(90)=1.81µs   p(95)=2.01µs  
+     http_req_connecting............: avg=2.16ms   min=0s       med=0s       max=267.05ms p(90)=0s       p(95)=0s      
+   ✓ http_req_duration..............: avg=281.55ms min=226.14ms med=265.89ms max=2.41s    p(90)=352.71ms p(95)=373.45ms
+       { expected_response:true }...: avg=273.75ms min=227.63ms med=265.7ms  max=1.87s    p(90)=299.93ms p(95)=353.76ms
+   ✗ http_req_failed................: 46.56% 9121 out of 19586
+     http_req_receiving.............: avg=797.89µs min=18.67µs  med=116.18µs max=729.38ms p(90)=4.22ms   p(95)=5.23ms  
+     http_req_sending...............: avg=188µs    min=25.18µs  med=145.81µs max=800.22ms p(90)=215.22µs p(95)=239.58µs
+     http_req_tls_handshaking.......: avg=4.33ms   min=0s       med=0s       max=576.4ms  p(90)=0s       p(95)=0s      
+     http_req_waiting...............: avg=280.57ms min=225.53ms med=265.08ms max=2.41s    p(90)=351.41ms p(95)=372.34ms
+     http_reqs......................: 19586  21.684707/s
+     iteration_duration.............: avg=2.28s    min=1.22s    med=2.26s    max=5.41s    p(90)=3.27s    p(95)=3.34s   
+     iterations.....................: 19586  21.684707/s
+     vus............................: 3      min=3              max=50
+     vus_max........................: 50     min=30             max=50
+
+
+running (15m03.2s), 00/50 VUs, 19586 complete and 0 interrupted iterations
+random_requests ✓ [======================================] 00/50 VUs  15m0s  50.00 iters/s
+```
