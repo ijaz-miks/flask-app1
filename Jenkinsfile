@@ -52,9 +52,9 @@ pipeline {
                     def ecrImageTagUser = "${ECR_REPO}/${USER_APP_NAME}:${BUILD_NUMBER}"
 
                     // Tag the image for ECR
-                    sh "docker tag ${APP_DOCKER_IMAGE} ${ecrImageTagApp}"
-                    sh "docker tag ${INVENTORY_DOCKER_IMAGE} ${ecrImageTagInventory}"
-                    sh "docker tag ${USER_DOCKER_IMAGE} ${ecrImageTagUser}"
+                    sh "docker tag sample-app/${APP_DOCKER_IMAGE} ${ecrImageTagApp}"
+                    sh "docker tag sample-app/${INVENTORY_DOCKER_IMAGE} ${ecrImageTagInventory}"
+                    sh "docker tag sample-app/${USER_DOCKER_IMAGE} ${ecrImageTagUser}"
 
 
                     // Push the image to ECR
