@@ -1,11 +1,13 @@
 import unittest
-from app import app
+from unittest.mock import patch
+from app import app  # Import your Flask app
 
 class TestApp(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
 
-    def test_hello(self):
+    @patch('opentelemetry.exporter.otlp.proto.http.trace_exporter.OTLPSpanExporter')
+    def test_hello(self, MockOTLPSpanExporter):  # Mock the exporter
         response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data.decode(), "Welcome to the Online Store API Gateway!")
