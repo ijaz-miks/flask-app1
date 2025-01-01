@@ -25,6 +25,20 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"
+        env:
+        - name: DB_HOST
+          value: my-app.cly48wisg5ac.eu-central-1.rds.amazonaws.com 
+        - name: DB_PORT
+          value: "3306"  # Default MySQL port
+        - name: DB_NAME
+          value: appdb # Your database name
+        - name: DB_USER
+          value: admin # Your database username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret # The name of the Secret with DB credentials
+              key: db-password
 ---
 apiVersion: v1
 kind: Service
