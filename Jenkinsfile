@@ -27,9 +27,9 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image
-                    sh "docker build -t sample-app/$APP_DOCKER_IMAGE ."
-                    sh "docker build -t sample-app/$INVENTORY_DOCKER_IMAGE ."
-                    sh "docker build -t sample-app/$USER_DOCKER_IMAGE ."
+                    sh "docker build -t sample-app/$APP_DOCKER_IMAGE sample-app/."
+                    sh "docker build -t sample-app/$INVENTORY_DOCKER_IMAGE inventory-service/."
+                    sh "docker build -t sample-app/$USER_DOCKER_IMAGE user-service/."
 
                     // Run tests inside the container
                     def testExitCode = sh(script: "docker run sample-app/$DOCKER_IMAGE python -m unittest test_app.py", returnStatus: true)
