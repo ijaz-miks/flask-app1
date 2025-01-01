@@ -22,7 +22,6 @@ trace.set_tracer_provider(TracerProvider(resource=resource))
 # Configure Jaeger exporter
 jaeger_exporter = OTLPSpanExporter(
     endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  # Replace with your Jaeger collector endpoint
-    insecure=True  # Set to False if using TLS
 )
 
 trace.get_tracer_provider().add_span_processor(
