@@ -118,7 +118,17 @@ def create_order():
                            (order_id, item['item_id'], item['quantity']))
 
         conn.commit()  # Commit the transaction
-        return jsonify({'message': 'Order created successfully', 'order_id': order_id}), 201
+        print("Transaction Committed")
+        # Construct the order object for the response
+
+        order_data = {
+            'id': order_id,
+            'user_id': user_id,
+            'items': items_to_order
+        }
+
+        print("Response Data:", {'message': 'Order created successfully', 'order': order_data})  # Debug print
+        return jsonify({'message': 'Order created successfully', 'order': order_data}), 201
 
     except mysql.connector.Error as error:
         print("Error during transaction:", error)
