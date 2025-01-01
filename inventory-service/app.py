@@ -1,8 +1,11 @@
 import os
 import mysql.connector
 from flask import Flask, request, jsonify
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
+
 
 # Database configuration from environment variables
 DB_HOST = os.environ.get("DB_HOST")
@@ -49,6 +52,7 @@ def create_table():
 create_table()
 
 @app.route('/items', methods=['POST'])
+@metrics.summary('add_item_latency_seconds', 'Latency of adding items')
 def add_item():
     conn = get_db_connection()
     if conn is not None:

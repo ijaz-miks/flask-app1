@@ -2,8 +2,10 @@ import os
 import mysql.connector
 from flask import Flask, request, jsonify
 import requests
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 # Database configuration from environment variables
 DB_HOST = os.environ.get("DB_HOST")

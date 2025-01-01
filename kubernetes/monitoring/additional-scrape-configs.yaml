@@ -27,3 +27,91 @@ stringData:
         insecure_skip_verify: true
       static_configs:
       - targets: ['metrics-server.kube-system.svc.cluster.local:443']
+
+    - job_name: 'flask-app1'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - flask-app
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: flask-app1
+        action: keep
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: ${1}:${2}
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: job
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+    - job_name: 'inventory-app'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - flask-app
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: inventory-app
+        action: keep
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: ${1}:${2}
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: job
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+    - job_name: 'order-app'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - flask-app
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: order-app
+        action: keep
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: ${1}:${2}
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: job
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+    - job_name: 'user-app'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - flask-app
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: user-app
+        action: keep
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: ${1}:${2}
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: job
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod

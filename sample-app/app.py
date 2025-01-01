@@ -1,7 +1,11 @@
 from flask import Flask, request, jsonify
 import requests
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
+
+metrics.info('app_info', 'Application info', version='1.0.3')
 
 # Replace with your actual service URLs in the Kubernetes cluster
 ORDER_SERVICE_URL = "http://order-app.flask-app.svc.cluster.local:80"
@@ -29,6 +33,10 @@ def login():
         return jsonify({'message': 'Invalid credentials'}), 401
 
 @app.route('/place_order', methods=['POST'])
+@metrics.counter(
+    'place_order_requests_total', 'Total number of place_order requests',
+    labels={'status': lambda r: r.status_code}
+)
 def place_order():
     # Basic authentication
     auth = request.authorization
