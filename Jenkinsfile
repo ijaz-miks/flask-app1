@@ -53,7 +53,7 @@ pipeline {
                     def ecrImageTagApp = "${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}"
                     def ecrImageTagInventory = "${ECR_REPO}/${INVENTORY_APP_NAME}:${BUILD_NUMBER}"
                     def ecrImageTagUser = "${ECR_REPO}/${USER_APP_NAME}:${BUILD_NUMBER}"
-                    def ecrImageTagOrder = "${ECR_REPO}/${ORDER_APP_IMAGE}:${BUILD_NUMBER}"
+                    def ecrImageTagOrder = "${ECR_REPO}/${ORDER_APP_NAME}:${BUILD_NUMBER}"
 
                     // Tag the image for ECR
                     sh "docker tag sample-app/${APP_DOCKER_IMAGE} ${ecrImageTagApp}"
