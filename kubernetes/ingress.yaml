@@ -41,7 +41,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: user-service # Service for app2
+            name: user-app # Service for app2
             port:
               number: 80
   - host: inventory.cave-jarvis.com # Hostname for app3
@@ -51,6 +51,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: inventory-service # Service for app3
+            name: inventory-app # Service for app3
             port:
               number: 80
