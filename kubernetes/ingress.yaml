@@ -34,13 +34,23 @@ spec:
             name: flask-app1-service # Service for app1
             port:
               number: 80
-  # - host: app2.cave-jarvis.com # Hostname for app2
-  #   http:
-  #     paths:
-  #     - path: /
-  #       pathType: Prefix
-  #       backend:
-  #         service:
-  #           name: my-flask-app2-service # Service for app2
-  #           port:
-  #             number: 80
+  - host: user.cave-jarvis.com # Hostname for app2
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service # Service for app2
+            port:
+              number: 80
+  - host: inventory.cave-jarvis.com # Hostname for app3
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: inventory-service # Service for app3
+            port:
+              number: 80
