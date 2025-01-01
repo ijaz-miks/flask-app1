@@ -32,7 +32,7 @@ pipeline {
                     sh "docker build -t sample-app/$USER_DOCKER_IMAGE user-service/."
 
                     // Run tests inside the container
-                    def testExitCode = sh(script: "docker run sample-app/$APP_DOCKER_IMAGE python -m unittest sample-app/test_app.py", returnStatus: true)
+                    def testExitCode = sh(script: "docker run sample-app/$APP_DOCKER_IMAGE python -m unittest test_app.py", returnStatus: true)
                     if (testExitCode != 0) {
                         error "Unit tests failed!"
                     }
