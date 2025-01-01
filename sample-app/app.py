@@ -53,13 +53,17 @@ def place_order():
     # Create order
     try:
         order_response = requests.post(f"{ORDER_SERVICE_URL}/orders", json={'user_id': user_id, 'items': items})
+        print(f"Order Service Response: {order_response.status_code}, {order_response.text}") # Debugging
         if order_response.status_code == 201:
-            return jsonify({'message': 'Order placed successfully', 'order': order_response.json()['order']}), 201
+            order_data = order_response.json()
+            if 'order' in order_data:
+                return jsonify({'message': 'Order placed successfully', 'order': order_data['order']}), 201
+            else:
+                return jsonify({'message': 'Failed to place order', 'details': 'Order service returned unexpected response format'}), 500
         else:
             return jsonify({'message': 'Failed to place order', 'details': order_response.json()}), order_response.status_code
     except requests.exceptions.ConnectionError:
         return jsonify({'message': 'Order service unavailable'}), 503
-
 @app.route('/items', methods=['GET'])
 def get_items():
     # Basic authentication
