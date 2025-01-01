@@ -1,10 +1,16 @@
 FROM python:3.9-slim-buster
 
+# Set the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+# Copy the requirements file into the container at /app
+COPY requirements.txt /app/
 
-COPY . .
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD [ "python", "app.py" ]
+# Copy the rest of the application code into the container at /app
+COPY . /app/
+
+# Run app.py when the container launches
+CMD ["python", "app.py"]
