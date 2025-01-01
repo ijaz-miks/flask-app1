@@ -6,10 +6,12 @@ pipeline {
         APP_NAME = "flask-app1"
         INVENTORY_APP_NAME = "inventory-app"
         USER_APP_NAME = "user-app"
+        ORDER_APP_NAME = "order-app"
 
         APP_DOCKER_IMAGE = "${env.APP_NAME}:${BUILD_NUMBER}"
         INVENTORY_DOCKER_IMAGE = "${env.INVENTORY_APP_NAME}:${BUILD_NUMBER}"
         USER_DOCKER_IMAGE = "${env.USER_APP_NAME}:${BUILD_NUMBER}"
+        ORDER_DOCKER_IMAGE = "${env.ORDER_APP_NAME}:${BUILD_NUMBER}"
 
         ECR_REPO = "public.ecr.aws/o0y6x7h1/sampleapp" // Your public ECR repo
         AWS_REGION = "us-east-1" // Your AWS region
@@ -30,6 +32,7 @@ pipeline {
                     sh "docker build -t sample-app/$APP_DOCKER_IMAGE sample-app/."
                     sh "docker build -t sample-app/$INVENTORY_DOCKER_IMAGE inventory-service/."
                     sh "docker build -t sample-app/$USER_DOCKER_IMAGE user-service/."
+                    sh "docker build -t sample-app/$ORDER_DOCKER_IMAGE order-service/."
 
                     // Run tests inside the container
                     def testExitCode = sh(script: "docker run sample-app/$APP_DOCKER_IMAGE python -m unittest test_app.py", returnStatus: true)
@@ -50,17 +53,19 @@ pipeline {
                     def ecrImageTagApp = "${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}"
                     def ecrImageTagInventory = "${ECR_REPO}/${INVENTORY_APP_NAME}:${BUILD_NUMBER}"
                     def ecrImageTagUser = "${ECR_REPO}/${USER_APP_NAME}:${BUILD_NUMBER}"
+                    def ecrImageTagOrder = "${ECR_REPO}/${ORDER_APP_IMAGE}:${BUILD_NUMBER}"
 
                     // Tag the image for ECR
                     sh "docker tag sample-app/${APP_DOCKER_IMAGE} ${ecrImageTagApp}"
                     sh "docker tag sample-app/${INVENTORY_DOCKER_IMAGE} ${ecrImageTagInventory}"
                     sh "docker tag sample-app/${USER_DOCKER_IMAGE} ${ecrImageTagUser}"
-
+                    sh "docker tag sample-app/${ORDER_DOCKER_IMAGE} ${ecrImageTagOrder}"
 
                     // Push the image to ECR
                     sh "docker push ${ecrImageTagApp}"
                     sh "docker push ${ecrImageTagInventory}"
                     sh "docker push ${ecrImageTagUser}"
+                    sh "docker push ${ecrImageTagOrder}"
 
                 }
             }
@@ -73,17 +78,20 @@ pipeline {
                     sh "sed -i 's#${ECR_REPO}/${APP_NAME}:.*#${ECR_REPO}/${APP_NAME}:${BUILD_NUMBER}#' kubernetes/app-service-deployment.yaml"
                     sh "sed -i 's#${ECR_REPO}/${INVENTORY_APP_NAME}:.*#${ECR_REPO}/${INVENTORY_APP_NAME}:${BUILD_NUMBER}#' kubernetes/inventory-service-deployment.yaml"
                     sh "sed -i 's#${ECR_REPO}/${USER_APP_NAME}:.*#${ECR_REPO}/${USER_APP_NAME}:${BUILD_NUMBER}#' kubernetes/user-service-deployment.yaml"
+                    sh "sed -i 's#${ECR_REPO}/${ORDER_APP_NAME}:.*#${ECR_REPO}/${ORDER_APP_NAME}:${BUILD_NUMBER}#' kubernetes/order-service-deployment.yaml"
 
                     // Apply the Kubernetes manifests
                     sh "kubectl apply -f kubernetes/app-service-deployment.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
                     sh "kubectl apply -f kubernetes/inventory-service-deployment.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
                     sh "kubectl apply -f kubernetes/user-service-deployment.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
+                    sh "kubectl apply -f kubernetes/order-service-deployment.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
                     sh "kubectl apply -f kubernetes/ingress.yaml --kubeconfig ${KUBE_CONFIG_PATH}"
 
                     // Wait for the deployment to complete
                     sh "kubectl rollout status deployment/${APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH} -n flask-app"
                     sh "kubectl rollout status deployment/${INVENTORY_APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH} -n flask-app"
                     sh "kubectl rollout status deployment/${USER_APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH} -n flask-app"
+                    sh "kubectl rollout status deployment/${ORDER_APP_NAME} --kubeconfig ${KUBE_CONFIG_PATH} -n flask-app"
 
                 }
             }
