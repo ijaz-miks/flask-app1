@@ -6,6 +6,7 @@ app = Flask(__name__)
 # Replace with your actual service URLs in the Kubernetes cluster
 ORDER_SERVICE_URL = "http://order-app.flask-app.svc.cluster.local:80"
 USER_SERVICE_URL = "http://user-app.flask-app.svc.cluster.local:80"
+INVENTORY_SERVICE_URL = "http://inventory-app.flask-app.svc.cluster.local:80"
 
 # Very basic authentication for demo purposes
 registered_users = {
@@ -58,6 +59,22 @@ def place_order():
             return jsonify({'message': 'Failed to place order', 'details': order_response.json()}), order_response.status_code
     except requests.exceptions.ConnectionError:
         return jsonify({'message': 'Order service unavailable'}), 503
+
+@app.route('/items', methods=['GET'])
+def get_items():
+    # Basic authentication
+    auth = request.authorization
+    if not auth or not authenticate_user(auth.username, auth.password):
+        return jsonify({'message': 'Authentication required'}), 401
+
+    try:
+        inventory_response = requests.get(f"{INVENTORY_SERVICE_URL}/items")
+        if inventory_response.status_code == 200:
+            return jsonify(inventory_response.json()), 200
+        else:
+            return jsonify({'message': 'Failed to retrieve items', 'details': inventory_response.json()}), inventory_response.status_code
+    except requests.exceptions.ConnectionError:
+        return jsonify({'message': 'Inventory service unavailable'}), 503
 
 @app.route('/')
 def index():

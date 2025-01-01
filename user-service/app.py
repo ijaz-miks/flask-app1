@@ -1,53 +1,163 @@
+import os
+import mysql.connector
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-users = {}
+# Database configuration from environment variables
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = os.environ.get("DB_PORT", "3306")  # Default MySQL port
+DB_NAME = os.environ.get("DB_NAME")
+DB_USER = os.environ.get("DB_USER")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+
+def get_db_connection():
+    conn = None
+    try:
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+    except mysql.connector.Error as error:
+        print("Error connecting to database:", error)
+    return conn
+
+# Create users table if it doesn't exist
+def create_table():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL UNIQUE
+            )
+        ''')
+        conn.commit()
+        cursor.close()
+    except mysql.connector.Error as error:
+        print("Error creating table:", error)
+    finally:
+        if conn is not None and conn.is_connected():
+            conn.close()
+
+create_table()
 
 @app.route('/users', methods=['POST'])
 def create_user():
-    data = request.json
-    if not data or 'name' not in data or 'email' not in data:
-        return jsonify({'message': 'Bad Request: name and email are required'}), 400
-    user_id = len(users) + 1
-    users[user_id] = {
-        'id': user_id,
-        'name': data['name'],
-        'email': data['email']
-    }
-    return jsonify({'message': 'User created successfully', 'user': users[user_id]}), 201
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        data = request.json
+        if not data or 'name' not in data or 'email' not in data:
+            return jsonify({'message': 'Bad Request: name and email are required'}), 400
+        try:
+            cursor.execute("INSERT INTO users (name, email) VALUES (%s, %s)", (data['name'], data['email']))
+            conn.commit()
+            user_id = cursor.lastrowid
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            user = cursor.fetchone()
+            user_data = {
+                'id': user[0],
+                'name': user[1],
+                'email': user[2]
+            }
+            return jsonify({'message': 'User created successfully', 'user': user_data}), 201
+        except mysql.connector.Error as error:
+            print("Error creating user:", error)
+            conn.rollback()
+            return jsonify({'message': 'Failed to create user'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/users', methods=['GET'])
 def get_users():
-    return jsonify({'users': list(users.values())})
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users")
+        users = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        user_list = [{'id': user[0], 'name': user[1], 'email': user[2]} for user in users]
+        return jsonify({'users': user_list})
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
-    user = users.get(user_id)
-    if user:
-        return jsonify({'user': user})
-    return jsonify({'message': 'User not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if user:
+            user_data = {'id': user[0], 'name': user[1], 'email': user[2]}
+            return jsonify({'user': user_data})
+        return jsonify({'message': 'User not found'}), 404
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
-    data = request.json
-    user = users.get(user_id)
-    if user:
-        if not data:
-            return jsonify({'message': 'Bad Request: No data provided for update'}), 400
-        if 'name' in data:
-            user['name'] = data['name']
-        if 'email' in data:
-            user['email'] = data['email']
-        return jsonify({'message': 'User updated successfully', 'user': user})
-    return jsonify({'message': 'User not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        data = request.json
+        try:
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            user = cursor.fetchone()
+            if user:
+                if not data:
+                    return jsonify({'message': 'Bad Request: No data provided for update'}), 400
+                if 'name' in data:
+                    cursor.execute("UPDATE users SET name = %s WHERE id = %s", (data['name'], user_id))
+                if 'email' in data:
+                    cursor.execute("UPDATE users SET email = %s WHERE id = %s", (data['email'], user_id))
+                conn.commit()
+                return jsonify({'message': 'User updated successfully'})
+            return jsonify({'message': 'User not found'}), 404
+        except mysql.connector.Error as error:
+            print("Error updating user:", error)
+            conn.rollback()
+            return jsonify({'message': 'Failed to update user'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    if user_id in users:
-        del users[user_id]
-        return jsonify({'message': 'User deleted successfully'}), 200
-    return jsonify({'message': 'User not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            user = cursor.fetchone()
+            if user:
+                cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+                conn.commit()
+                return jsonify({'message': 'User deleted successfully'})
+            return jsonify({'message': 'User not found'}), 404
+        except mysql.connector.Error as error:
+            print("Error deleting user:", error)
+            conn.rollback()
+            return jsonify({'message': 'Failed to delete user'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 # Health check endpoint
 @app.route('/healthz', methods=['GET'])

@@ -1,11 +1,64 @@
+import os
+import mysql.connector
 from flask import Flask, request, jsonify
 import requests
 
 app = Flask(__name__)
 
-orders = {}
+# Database configuration from environment variables
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = os.environ.get("DB_PORT", "3306")
+DB_NAME = os.environ.get("DB_NAME")
+DB_USER = os.environ.get("DB_USER")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+
+# Replace with your actual service URLs in the Kubernetes cluster
 USER_SERVICE_URL = "http://user-app.flask-app.svc.cluster.local:80"
 INVENTORY_SERVICE_URL = "http://inventory-app.flask-app.svc.cluster.local:80"
+
+def get_db_connection():
+    try:
+        return mysql.connector.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+    except mysql.connector.Error as error:
+        print("Error connecting to database:", error)
+        return None
+
+def create_tables():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS orders (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS order_items (
+                order_id INT NOT NULL,
+                item_id INT NOT NULL,
+                quantity INT NOT NULL,
+                FOREIGN KEY (order_id) REFERENCES orders(id),
+                FOREIGN KEY (item_id) REFERENCES items(id),
+                PRIMARY KEY (order_id, item_id)
+            )
+        ''')
+        conn.commit()
+        cursor.close()
+    except mysql.connector.Error as error:
+        print("Error creating tables:", error)
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+
+create_tables()
 
 @app.route('/orders', methods=['POST'])
 def create_order():
@@ -16,6 +69,12 @@ def create_order():
     user_id = data['user_id']
     items_to_order = data['items']
 
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({'message': 'Database connection failed'}), 500
+
+    cursor = conn.cursor()
+
     # Verify User
     try:
         user_response = requests.get(f"{USER_SERVICE_URL}/users/{user_id}")
@@ -24,57 +83,110 @@ def create_order():
     except requests.exceptions.ConnectionError:
         return jsonify({'message': 'User service unavailable'}), 503
 
-    # Check and Update Inventory
-    items_not_found = []
-    items_insufficient_quantity = []
-    items_update_failed = []
-    for item in items_to_order:
-        item_id = item['item_id']
-        quantity = item['quantity']
-        try:
-            inventory_response = requests.get(f"{INVENTORY_SERVICE_URL}/items/{item_id}")
-            if inventory_response.status_code != 200:
-                items_not_found.append(item_id)
-            else:
-                item_data = inventory_response.json()['item']
-                if item_data['quantity'] < quantity:
-                    items_insufficient_quantity.append(item_id)
-                else:
-                    # Update inventory (reduce quantity)
-                    update_response = requests.put(f"{INVENTORY_SERVICE_URL}/items/{item_id}", json={'quantity': item_data['quantity'] - quantity})
-                    if update_response.status_code != 200:
-                        items_update_failed.append(item_id)
+    # Check and Update Inventory (with Database Transactions)
+    try:
+        conn.start_transaction()  # Start a transaction
 
-        except requests.exceptions.ConnectionError:
-            return jsonify({'message': 'Inventory service unavailable'}), 503
+        for item in items_to_order:
+            item_id = item['item_id']
+            quantity = item['quantity']
 
-    # Create Order if no issues found
-    if items_not_found:
-        return jsonify({'message': f'Items not found: {items_not_found}'}), 404
-    if items_insufficient_quantity:
-        return jsonify({'message': f'Insufficient quantity for items: {items_insufficient_quantity}'}), 400
-    if items_update_failed:
-        return jsonify({'message': f'Failed to update inventory for items: {items_update_failed}'}), 500
-    
-    order_id = len(orders) + 1
-    orders[order_id] = {
-        'id': order_id,
-        'user_id': user_id,
-        'items': items_to_order
-    }
+            # Check Inventory
+            cursor.execute("SELECT quantity FROM items WHERE id = %s FOR UPDATE", (item_id,))
+            result = cursor.fetchone()
 
-    return jsonify({'message': 'Order created successfully', 'order': orders[order_id]}), 201
+            if result is None:
+                conn.rollback()  # Rollback if item not found
+                return jsonify({'message': f'Item {item_id} not found'}), 404
+
+            available_quantity = result[0]
+            if available_quantity < quantity:
+                conn.rollback()  # Rollback if insufficient quantity
+                return jsonify({'message': f'Insufficient quantity for item {item_id}'}), 400
+
+            # Update Inventory
+            new_quantity = available_quantity - quantity
+            cursor.execute("UPDATE items SET quantity = %s WHERE id = %s", (new_quantity, item_id))
+
+        # Create Order
+        cursor.execute("INSERT INTO orders (user_id) VALUES (%s)", (user_id,))
+        order_id = cursor.lastrowid
+
+        # Add Order Items
+        for item in items_to_order:
+            cursor.execute("INSERT INTO order_items (order_id, item_id, quantity) VALUES (%s, %s, %s)",
+                           (order_id, item['item_id'], item['quantity']))
+
+        conn.commit()  # Commit the transaction
+        return jsonify({'message': 'Order created successfully', 'order_id': order_id}), 201
+
+    except mysql.connector.Error as error:
+        print("Error during transaction:", error)
+        conn.rollback()  # Rollback on any database error
+        return jsonify({'message': 'Failed to create order'}), 500
+    except requests.exceptions.ConnectionError:
+        return jsonify({'message': 'Inventory or user service unavailable'}), 503
+    finally:
+        cursor.close()
+        conn.close()
 
 @app.route('/orders', methods=['GET'])
 def get_orders():
-    return jsonify({'orders': list(orders.values())})
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT * FROM orders")
+            orders = cursor.fetchall()
+
+            for order in orders:
+                cursor.execute("""
+                    SELECT oi.item_id, oi.quantity, i.name, i.price
+                    FROM order_items oi
+                    JOIN items i ON oi.item_id = i.id
+                    WHERE oi.order_id = %s
+                """, (order['id'],))
+                order_items = cursor.fetchall()
+                order['items'] = [{'item_id': item['item_id'], 'quantity': item['quantity'], 'name': item['name'], 'price': item['price']} for item in order_items]
+
+            return jsonify({'orders': orders}), 200
+        except mysql.connector.Error as error:
+            print("Error fetching orders:", error)
+            return jsonify({'message': 'Failed to fetch orders'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/orders/<int:order_id>', methods=['GET'])
 def get_order(order_id):
-    order = orders.get(order_id)
-    if order:
-        return jsonify({'order': order})
-    return jsonify({'message': 'Order not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("SELECT * FROM orders WHERE id = %s", (order_id,))
+            order = cursor.fetchone()
+
+            if order:
+                cursor.execute("""
+                    SELECT oi.item_id, oi.quantity, i.name, i.price
+                    FROM order_items oi
+                    JOIN items i ON oi.item_id = i.id
+                    WHERE oi.order_id = %s
+                """, (order_id,))
+                order_items = cursor.fetchall()
+                order['items'] = [{'item_id': item['item_id'], 'quantity': item['quantity'], 'name': item['name'], 'price': item['price']} for item in order_items]
+                return jsonify({'order': order}), 200
+            return jsonify({'message': 'Order not found'}), 404
+        except mysql.connector.Error as error:
+            print("Error fetching order:", error)
+            return jsonify({'message': 'Failed to fetch order'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 # Health check endpoint
 @app.route('/healthz', methods=['GET'])
@@ -82,4 +194,4 @@ def health_check():
     return jsonify({'status': 'ok'}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5003)
+    app.run(host='0.0.0.0', port=5000)

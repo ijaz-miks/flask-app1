@@ -1,56 +1,167 @@
+import os
+import mysql.connector
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-inventory = {}
+# Database configuration from environment variables
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = os.environ.get("DB_PORT", "3306")  # Default MySQL port
+DB_NAME = os.environ.get("DB_NAME")
+DB_USER = os.environ.get("DB_USER")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+
+def get_db_connection():
+    conn = None
+    try:
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+    except mysql.connector.Error as error:
+        print("Error connecting to database:", error)
+    return conn
+
+# Create items table if it doesn't exist
+def create_table():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                quantity INT NOT NULL,
+                price DECIMAL(10, 2) NOT NULL
+            )
+        ''')
+        conn.commit()
+        cursor.close()
+    except mysql.connector.Error as error:
+        print("Error creating table:", error)
+    finally:
+        if conn is not None and conn.is_connected():
+            conn.close()
+
+create_table()
 
 @app.route('/items', methods=['POST'])
 def add_item():
-    data = request.json
-    if not data or 'name' not in data or 'quantity' not in data or 'price' not in data:
-        return jsonify({'message': 'Bad Request: name, quantity, and price are required'}), 400
-    item_id = len(inventory) + 1
-    inventory[item_id] = {
-        'id': item_id,
-        'name': data['name'],
-        'quantity': data['quantity'],
-        'price': data['price']
-    }
-    return jsonify({'message': 'Item added successfully', 'item': inventory[item_id]}), 201
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        data = request.json
+        if not data or 'name' not in data or 'quantity' not in data or 'price' not in data:
+            return jsonify({'message': 'Bad Request: name, quantity, and price are required'}), 400
+        try:
+            cursor.execute("INSERT INTO items (name, quantity, price) VALUES (%s, %s, %s)", (data['name'], data['quantity'], data['price']))
+            conn.commit()
+            item_id = cursor.lastrowid
+            cursor.execute("SELECT * FROM items WHERE id = %s", (item_id,))
+            item = cursor.fetchone()
+            item_data = {
+                'id': item[0],
+                'name': item[1],
+                'quantity': item[2],
+                'price': item[3]
+            }
+            return jsonify({'message': 'Item added successfully', 'item': item_data}), 201
+        except mysql.connector.Error as error:
+            print("Error adding item:", error)
+            conn.rollback()
+            return jsonify({'message': 'Failed to add item'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/items', methods=['GET'])
 def get_items():
-    return jsonify({'items': list(inventory.values())})
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM items")
+        items = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        item_list = [{'id': item[0], 'name': item[1], 'quantity': item[2], 'price': item[3]} for item in items]
+        return jsonify({'items': item_list})
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/items/<int:item_id>', methods=['GET'])
 def get_item(item_id):
-    item = inventory.get(item_id)
-    if item:
-        return jsonify({'item': item})
-    return jsonify({'message': 'Item not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM items WHERE id = %s", (item_id,))
+        item = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if item:
+            item_data = {'id': item[0], 'name': item[1], 'quantity': item[2], 'price': item[3]}
+            return jsonify({'item': item_data})
+        return jsonify({'message': 'Item not found'}), 404
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/items/<int:item_id>', methods=['PUT'])
 def update_item(item_id):
-    data = request.json
-    item = inventory.get(item_id)
-    if item:
-        if not data:
-            return jsonify({'message': 'Bad Request: No data provided for update'}), 400
-        if 'name' in data:
-            item['name'] = data['name']
-        if 'quantity' in data:
-            item['quantity'] = data['quantity']
-        if 'price' in data:
-            item['price'] = data['price']
-        return jsonify({'message': 'Item updated successfully', 'item': item})
-    return jsonify({'message': 'Item not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        data = request.json
+        try:
+            cursor.execute("SELECT * FROM items WHERE id = %s", (item_id,))
+            item = cursor.fetchone()
+            if item:
+                if not data:
+                    return jsonify({'message': 'Bad Request: No data provided for update'}), 400
+                if 'name' in data:
+                    cursor.execute("UPDATE items SET name = %s WHERE id = %s", (data['name'], item_id))
+                if 'quantity' in data:
+                    cursor.execute("UPDATE items SET quantity = %s WHERE id = %s", (data['quantity'], item_id))
+                if 'price' in data:
+                    cursor.execute("UPDATE items SET price = %s WHERE id = %s", (data['price'], item_id))
+                conn.commit()
+                return jsonify({'message': 'Item updated successfully'})
+            return jsonify({'message': 'Item not found'}), 404
+        except mysql.connector.Error as error:
+            print("Error updating item:", error)
+            conn.rollback()
+            return jsonify({'message': 'Failed to update item'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 @app.route('/items/<int:item_id>', methods=['DELETE'])
 def delete_item(item_id):
-    if item_id in inventory:
-        del inventory[item_id]
-        return jsonify({'message': 'Item deleted successfully'}), 200
-    return jsonify({'message': 'Item not found'}), 404
+    conn = get_db_connection()
+    if conn is not None:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM items WHERE id = %s", (item_id,))
+            item = cursor.fetchone()
+            if item:
+                cursor.execute("DELETE FROM items WHERE id = %s", (item_id,))
+                conn.commit()
+                return jsonify({'message': 'Item deleted successfully'})
+            return jsonify({'message': 'Item not found'}), 404
+        except mysql.connector.Error as error:
+            print("Error deleting item:", error)
+            conn.rollback()
+            return jsonify({'message': 'Failed to delete item'}), 500
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return jsonify({'message': 'Database connection failed'}), 500
 
 # Health check endpoint
 @app.route('/healthz', methods=['GET'])
