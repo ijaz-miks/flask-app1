@@ -17,12 +17,12 @@ app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 
 # Configure tracing
-resource = Resource.create(attributes={"service.name": "order-service"})  # Replace with your service name
+resource = Resource.create(attributes={"service.name": "order-service"})  
 trace.set_tracer_provider(TracerProvider(resource=resource))
 
 # Configure Jaeger exporter
 jaeger_exporter = OTLPSpanExporter(
-    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  # Replace with your Jaeger collector endpoint
+    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  
 )
 
 trace.get_tracer_provider().add_span_processor(
@@ -42,7 +42,6 @@ DB_NAME = os.environ.get("DB_NAME")
 DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 
-# Replace with your actual service URLs in the Kubernetes cluster
 USER_SERVICE_URL = "http://user-app.flask-app.svc.cluster.local:80"
 INVENTORY_SERVICE_URL = "http://inventory-app.flask-app.svc.cluster.local:80"
 

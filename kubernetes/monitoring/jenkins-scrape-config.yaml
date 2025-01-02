@@ -11,7 +11,3 @@ stringData:
       static_configs:
         - targets:
           - 'jenkins.cave-jarvis.com'
-      # Optional: Basic auth or TLS config (if needed)
-      #basic_auth:
-      #  username: <your_jenkins_username>
-      #  password: <your_jenkins_password>

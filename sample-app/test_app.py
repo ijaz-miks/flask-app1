@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from app import app  # Import your Flask app
+from app import app  
 
 class TestApp(unittest.TestCase):
     def setUp(self):

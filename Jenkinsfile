@@ -13,8 +13,8 @@ pipeline {
         USER_DOCKER_IMAGE = "${env.USER_APP_NAME}:${BUILD_NUMBER}"
         ORDER_DOCKER_IMAGE = "${env.ORDER_APP_NAME}:${BUILD_NUMBER}"
 
-        ECR_REPO = "public.ecr.aws/o0y6x7h1/sampleapp" // Your public ECR repo
-        AWS_REGION = "us-east-1" // Your AWS region
+        ECR_REPO = "public.ecr.aws/o0y6x7h1/sampleapp" 
+        AWS_REGION = "us-east-1" 
         KUBE_CONFIG_PATH = "${HOME}/.kube/config"
     }
 

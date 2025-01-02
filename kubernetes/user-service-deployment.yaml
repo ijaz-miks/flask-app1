@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: user-app
-        image: public.ecr.aws/o0y6x7h1/sampleapp/user-app:latest # Placeholder
+        image: public.ecr.aws/o0y6x7h1/sampleapp/user-app:latest 
         ports:
         - containerPort: 5002
         resources:
@@ -29,15 +29,15 @@ spec:
         - name: DB_HOST
           value: my-app.cly48wisg5ac.eu-central-1.rds.amazonaws.com 
         - name: DB_PORT
-          value: "3306"  # Default MySQL port
+          value: "3306"  
         - name: DB_NAME
-          value: appdb # Your database name
+          value: appdb 
         - name: DB_USER
-          value: admin # Your database username
+          value: admin 
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: db-secret # The name of the Secret with DB credentials
+              name: db-secret 
               key: db-password
 ---
 apiVersion: v1

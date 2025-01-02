@@ -3,7 +3,7 @@ import mysql.connector
 from flask import Flask, request, jsonify
 from prometheus_flask_exporter import PrometheusMetrics
 
-# Import OpenTelemetry modules
+# Importing OpenTelemetry modules
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -15,13 +15,13 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 
-# Configure tracing
-resource = Resource.create(attributes={"service.name": "inventory-service"})  # Replace with your service name
+# Configuring tracing
+resource = Resource.create(attributes={"service.name": "inventory-service"})
 trace.set_tracer_provider(TracerProvider(resource=resource))
 
-# Configure Jaeger exporter
+# Configuring Jaeger exporter
 jaeger_exporter = OTLPSpanExporter(
-    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  # Replace with your Jaeger collector endpoint
+    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",
 )
 
 trace.get_tracer_provider().add_span_processor(
@@ -36,7 +36,7 @@ tracer = trace.get_tracer(__name__)
 
 # Database configuration from environment variables
 DB_HOST = os.environ.get("DB_HOST")
-DB_PORT = os.environ.get("DB_PORT", "3306")  # Default MySQL port
+DB_PORT = os.environ.get("DB_PORT", "3306")
 DB_NAME = os.environ.get("DB_NAME")
 DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")

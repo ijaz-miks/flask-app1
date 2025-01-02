@@ -18,12 +18,12 @@ app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 
 # Configure tracing
-resource = Resource.create(attributes={"service.name": "api-gateway-service"})  # Replace with your service name
+resource = Resource.create(attributes={"service.name": "api-gateway-service"}) 
 trace.set_tracer_provider(TracerProvider(resource=resource))
 
 # Configure Jaeger exporter
 jaeger_exporter = OTLPSpanExporter(
-    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  # Replace with your Jaeger collector endpoint
+    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  
 )
 
 trace.get_tracer_provider().add_span_processor(
@@ -36,7 +36,6 @@ RequestsInstrumentor().instrument()
 
 tracer = trace.get_tracer(__name__)
 
-# Replace with your actual service URLs in the Kubernetes cluster
 ORDER_SERVICE_URL = "http://order-app.flask-app.svc.cluster.local:80"
 USER_SERVICE_URL = "http://user-app.flask-app.svc.cluster.local:80"
 INVENTORY_SERVICE_URL = "http://inventory-app.flask-app.svc.cluster.local:80"
@@ -81,7 +80,7 @@ def place_order():
         if not user_id or not items:
             return jsonify({'message': 'Bad Request: user_id and items are required'}), 400
 
-        # Verify user (Optional, you might want a more robust way to verify logged-in users)
+        # Verify user 
         try:
             with tracer.start_as_current_span("verify_user"):
                 user_response = requests.get(f"{USER_SERVICE_URL}/users/{user_id}")
@@ -133,12 +132,10 @@ def index():
 def health_check():
     return jsonify({'status': 'ok'}), 200
 
-# In your app.py for the API Gateway
 @app.route('/error', methods=['GET'])
 def error_endpoint():
     return jsonify({'message': 'Simulated error'}), 500
 
-# In your app.py for the API Gateway
 @app.route('/slow', methods=['GET'])
 def slow_endpoint():
     time.sleep(2)  # Introduce a 2-second delay

@@ -16,12 +16,12 @@ app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 
 # Configure tracing
-resource = Resource.create(attributes={"service.name": "user-service"})  # Replace with your service name
+resource = Resource.create(attributes={"service.name": "user-service"})  
 trace.set_tracer_provider(TracerProvider(resource=resource))
 
 # Configure Jaeger exporter
 jaeger_exporter = OTLPSpanExporter(
-    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  # Replace with your Jaeger collector endpoint
+    endpoint="http://simplest-jaeger-collector.observability.svc.cluster.local:4318/v1/traces",  
 )
 
 trace.get_tracer_provider().add_span_processor(

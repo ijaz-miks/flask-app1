@@ -13,7 +13,7 @@ metadata:
     alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
 spec:
   rules:
-    - host: grafana.cave-jarvis.com # Hostname for Grafana
+    - host: grafana.cave-jarvis.com # Hostname of Grafana
       http:
         paths:
           - path: /
@@ -23,7 +23,7 @@ spec:
                 name: stable-grafana
                 port:
                   number: 80
-    - host: prometheus.cave-jarvis.com # Hostname for Prometheus
+    - host: prometheus.cave-jarvis.com # Hostname of Prometheus
       http:
         paths:
           - path: /

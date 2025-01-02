@@ -1,5 +1,5 @@
 Install K6 from https://grafana.com/docs/k6/latest/set-up/install-k6/
-Once installed you can run the command 
+Once installed can run the command 
 
 k6 run k6-script.js 
 

@@ -7,10 +7,10 @@ export const options = {
     scenarios: {
         random_requests: {
             executor: 'constant-arrival-rate',
-            rate: 50,   // Adjust to control the request rate (requests per second)
+            rate: 50,  
             timeUnit: '1s',
             duration: '15m',
-            preAllocatedVUs: 10, // Adjust based on your expected load
+            preAllocatedVUs: 10, 
             maxVUs: 50,
         },
     },
@@ -76,9 +76,9 @@ function getUsers() {
 
 function placeOrder() {
     const res = http.post(`${BASE_URL_API_GATEWAY}/place_order`, JSON.stringify({
-        user_id: randomIntBetween(1, 5), // Assuming you have at least 5 users
+        user_id: randomIntBetween(1, 5), 
         items: [
-            { item_id: randomIntBetween(1, 5), quantity: randomIntBetween(1, 5) }, // Assuming you have at least 5 items
+            { item_id: randomIntBetween(1, 5), quantity: randomIntBetween(1, 5) }, 
         ]
     }), {
         headers: {
@@ -115,19 +115,19 @@ function getItems() {
 function introduceIssue(issueType) {
     if (issueType === 'HighErrorRate') {
         // Simulate a high error rate by making requests that are likely to fail
-        const res = http.get(`${BASE_URL_API_GATEWAY}/error`); // Assuming you have an /error endpoint that returns a 500 error
+        const res = http.get(`${BASE_URL_API_GATEWAY}/error`); 
         check(res, { 'Error Rate Increased': (r) => r.status >= 500 });
 
     } else if (issueType === 'ErrorRateSuddenIncrease') {
         // Simulate a sudden increase in error rate
         for (let i = 0; i < 5; i++) {
-            const res = http.get(`${BASE_URL_API_GATEWAY}/error`); // Assuming you have an /error endpoint that returns a 500 error
+            const res = http.get(`${BASE_URL_API_GATEWAY}/error`); 
             check(res, { 'Error Rate Increased': (r) => r.status >= 500 });
         }
 
     } else if (issueType === 'HighLatency') {
         // Simulate high latency by making requests to a slow endpoint
-        const res = http.get(`${BASE_URL_API_GATEWAY}/slow`); // Assuming you have a /slow endpoint that introduces a delay
+        const res = http.get(`${BASE_URL_API_GATEWAY}/slow`); 
         check(res, { 'Latency Increased': (r) => r.timings.duration > 1000 });
 
     } else if (issueType === 'LatencyAnomaly') {
@@ -139,7 +139,6 @@ function introduceIssue(issueType) {
     } else if (issueType === 'CrashPods') {
         // Simulate a pod crash (requires access to Kubernetes API)
         // This is an advanced scenario and requires careful consideration
-        // You might need to use a separate script or tool to interact with the Kubernetes API
         console.log('Simulating pod crash - not implemented in this example');
 
     } else {

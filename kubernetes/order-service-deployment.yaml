@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: order-app
-        image: public.ecr.aws/o0y6x7h1/sampleapp/order-app:latest # Replace with your ECR image
+        image: public.ecr.aws/o0y6x7h1/sampleapp/order-app:latest
         ports:
         - containerPort: 5000
         resources:
@@ -35,9 +35,9 @@ spec:
         - name: DB_PORT
           value: "3306"  # Default MySQL port
         - name: DB_NAME
-          value: appdb # Your database name
+          value: appdb 
         - name: DB_USER
-          value: admin # Your database username
+          value: admin 
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:

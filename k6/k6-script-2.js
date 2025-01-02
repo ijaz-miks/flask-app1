@@ -6,7 +6,7 @@ import { randomIntBetween, randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0
 export const options = {
     stages: [
         { duration: '30s', target: 20 }, // Ramp up to 20 virtual users over 30 seconds
-        { duration: '15m', target: 50 },  // Stay at 50 users for 15 minutes, adjust if needed
+        { duration: '15m', target: 50 },  // Stay at 50 users for 15 minutes
         { duration: '30s', target: 0 },  // Ramp down to 0 users
     ],
     thresholds: {

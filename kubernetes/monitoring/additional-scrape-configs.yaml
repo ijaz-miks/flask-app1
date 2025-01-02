@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: additional-scrape-configs
-  namespace: monitoring # Replace with your monitoring namespace
+  namespace: monitoring
 stringData:
   prometheus-additional.yaml: |
     - job_name: 'jenkins'
