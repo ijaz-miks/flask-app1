@@ -1,4 +1,5 @@
 import os
+import time
 import mysql.connector
 from flask import Flask, request, jsonify
 import requests
@@ -131,6 +132,17 @@ def index():
 @app.route('/healthz', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok'}), 200
+
+# In your app.py for the API Gateway
+@app.route('/error', methods=['GET'])
+def error_endpoint():
+    return jsonify({'message': 'Simulated error'}), 500
+
+# In your app.py for the API Gateway
+@app.route('/slow', methods=['GET'])
+def slow_endpoint():
+    time.sleep(2)  # Introduce a 2-second delay
+    return jsonify({'message': 'Slow response'}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

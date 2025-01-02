@@ -1,12 +1,12 @@
 import http from 'k6/http';
-import { sleep, check } from 'k6';
+import { sleep, check, fail } from 'k6';
 import { b64encode } from 'k6/encoding';
 import { randomIntBetween, randomItem } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 
 export const options = {
     stages: [
         { duration: '30s', target: 20 }, // Ramp up to 20 virtual users over 30 seconds
-        { duration: '13m', target: 50 },  // Stay at 50 users for 13 minutes
+        { duration: '15m', target: 50 },  // Stay at 50 users for 15 minutes, adjust if needed
         { duration: '30s', target: 0 },  // Ramp down to 0 users
     ],
     thresholds: {
@@ -18,7 +18,6 @@ export const options = {
 const BASE_URL_API_GATEWAY = 'https://flask-app1.cave-jarvis.com';
 const BASE_URL_INVENTORY = 'https://inventory.cave-jarvis.com';
 const BASE_URL_USER = 'https://user.cave-jarvis.com';
-const BASE_URL_ORDER = 'https://order.cave-jarvis.com';
 
 // Function to generate random item data
 function generateRandomItem() {
@@ -71,7 +70,6 @@ function getExistingItemIds() {
 }
 
 // Functions to perform actions on services
-
 function addInventoryItem() {
     const item = generateRandomItem();
     const res = http.post(`${BASE_URL_INVENTORY}/items`, JSON.stringify(item), {
@@ -121,6 +119,7 @@ function placeOrder() {
     });
 }
 
+// Function to simulate placing an order with an invalid user ID
 function placeInvalidUserOrder() {
     const invalidUserId = 999999; // An ID that should not exist
     const res = http.post(`${BASE_URL_API_GATEWAY}/place_order`, JSON.stringify({
@@ -139,6 +138,7 @@ function placeInvalidUserOrder() {
     });
 }
 
+// Function to simulate placing an order with an invalid item ID
 function placeInvalidItemOrder() {
     const existingUserIds = getExistingUserIds();
 
